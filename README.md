@@ -7,4 +7,4 @@ Play: https://aosmann.github.io/goalfall/
 
 Country, capital and continent data: [mledoze/countries](https://github.com/mledoze/countries), Open Database License (ODbL 1.0).  
 Flags: [flag-icons](https://github.com/lipis/flag-icons), MIT licence, compressed into `flags/`.  
-3D: [three.js](https://threejs.org) r128, MIT licence, kept locally in `three.min.js`.
+3D: [three.js](https://threejs.org) r170, MIT licence, kept locally in `lib/`.
