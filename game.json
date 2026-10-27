@@ -1,0 +1,15 @@
+{
+  "contract": 1,
+  "id": "goalfall",
+  "name": "Goalfall",
+  "pitch": "Read it. Aim it. Score.",
+  "description": "A penalty shootout quiz. Three answers hang in the goal: swipe the ball at the right one to beat the keeper, and build a streak for double and triple points.",
+  "color": "#0e9fc0",
+  "icon": "icon-512.png",
+  "bank": "EduQ",
+  "score": "points",
+  "settings": [
+    {"key": "level", "label": "Difficulty", "options": [[1, "Easy"], [2, "Medium"], [3, "Hard"]], "default": "topic"},
+    {"key": "mode", "label": "Run length", "options": [["p10", "10 penalties"], ["p20", "20 penalties"], ["t60", "60 sec"], ["t90", "90 sec"]], "default": "p10"}
+  ]
+}
