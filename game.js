@@ -215,11 +215,16 @@ const boards=BX.map((x,i)=>{const g=new THREE.Group();g.position.set(x,SY,-.02);
   [[SW+.12,.05,0,SH+.04],[SW+.12,.05,0,-.04],[.05,SH+.12,-SW/2-.04,SH/2],[.05,SH+.12,SW/2+.04,SH/2]].forEach(([w,h,x2,y2])=>{const r=new THREE.Mesh(new THREE.BoxGeometry(w,h,.11),rimM);r.position.set(x2,y2===SH/2?SH/2:y2,0);g.add(r)});
   const faceM=std(0xffffff,{roughness:.55,emissive:0xffffff,emissiveIntensity:.32});const face=new THREE.Mesh(new THREE.PlaneGeometry(SW,SH),faceM);face.position.set(0,SH/2,.056);g.add(face);
   const lm=std(0x5c6470,{metalness:.5,roughness:.4}),lg=new THREE.CylinderGeometry(.03,.03,SY-GH+.04,8);[-1,1].forEach(s=>{const l=new THREE.Mesh(lg,lm);l.position.set(s*SW*.36,-(SY-GH)/2+.02,0);g.add(l)});
-  return{g,faceM,rimM,wob:0,i}});
-function boardTint(i,kind){const b=boards[i],m=b.faceM;m.color.set(kind==='right'?0xb6f2c8:kind==='wrong'?0xffd2d2:0xffffff);m.emissive.set(kind==='right'?0x2bd96b:kind==='wrong'?0xff5a5a:0xffffff);m.emissiveIntensity=kind?.35:.32;
-  b.rimM.emissive.set(kind==='right'?'#2bff7a':kind==='wrong'?'#ff4040':ZCOL[i]);b.rimM.emissiveIntensity=kind==='wrong'?1.2:kind?3.2:2.2}
+  /* result panel: flat, untoned colour so green / red read at full strength */
+  const resM=new THREE.MeshBasicMaterial({color:0x16a34a,toneMapped:false,transparent:true,opacity:0});const res=new THREE.Mesh(new THREE.PlaneGeometry(SW,SH),resM);res.position.set(0,SH/2,.062);g.add(res);
+  return{g,faceM,rimM,resM,wob:0,i}});
+function boardTint(i,kind){const b=boards[i],m=b.faceM;
+  /* solid result colours: bright green for the right answer, strong red for a wrong pick */
+  m.color.set(0xffffff);m.emissive.set(0xffffff);m.emissiveIntensity=.32;b.resM.color.set(kind==='right'?0x14a44d:0xdc2f36);b.resM.opacity=kind?1:0;
+  b.rimM.emissive.set(kind==='right'?'#3dff8a':kind==='wrong'?'#ff5a5a':ZCOL[i]);b.rimM.emissiveIntensity=kind?3.6:2.2;if(kind)b.pop=1}
 function hitBoard(i,v){boards[i].wob=v}
-function stepBoards(dt){boards.forEach((b,i)=>{b.wob*=Math.exp(-dt*5);b.g.rotation.z=Math.sin(t*28)*b.wob*.01;if(state==='aim')b.rimM.emissiveIntensity=aimZone===i?4.5:2.2+Math.sin(t*3+i)*.4})}
+function stepBoards(dt){boards.forEach((b,i)=>{b.wob*=Math.exp(-dt*5);b.g.rotation.z=Math.sin(t*28)*b.wob*.01;
+    if(b.pop>0){b.pop=Math.max(0,b.pop-dt*2.2);const u=1-b.pop,s=1+Math.sin(Math.min(1,u*1.6)*Math.PI)*.1*(reduced?0:1);b.g.scale.set(s,s,1)}else b.g.scale.set(1,1,1);if(state==='aim')b.rimM.emissiveIntensity=aimZone===i?4.5:2.2+Math.sin(t*3+i)*.4})}
 /* target glow on the goal mouth while aiming */
 const tgtTex=canvasTex(128,128,(x)=>{const g=x.createRadialGradient(64,64,10,64,64,62);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.72,'rgba(255,255,255,.0)');g.addColorStop(.8,'rgba(255,255,255,.9)');g.addColorStop(.9,'rgba(255,255,255,.0)');x.fillStyle=g;x.fillRect(0,0,128,128)});
 const targets=BX.map(x=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.5),bas(0x7fe3ff,{map:tgtTex,transparent:true,depthWrite:false,opacity:0,toneMapped:false}));m.position.set(x,1.2,-.35);scene.add(m);return m});
@@ -522,7 +527,7 @@ function showQuestion(q){const qt=$('qtext'),im=$('qimg'),box=$('qbox');
   setTimeout(()=>{qt.textContent='';if(q.code){qt.append(el('span','code',q.code))}qt.append(q.q);
     if(q.img){im.src=q.img;im.hidden=false}else{im.hidden=true;im.removeAttribute('src')}
     $('qtag').textContent=q.tag||'';fitQuestion();box.classList.remove('swap')},reduced?0:140);
-  bdEls.forEach((e,i)=>{e.className='bd';e.querySelector('.t').textContent=q.ans[i];boardTint(i,'');fitBoard(i)})}
+  bdEls.forEach((e,i)=>{e.className='bd';e.querySelector('.tick').textContent='✓';e.querySelector('.t').textContent=q.ans[i];boardTint(i,'');fitBoard(i)})}
 
 /* ======================= GAME STATE ======================= */
 let state='menu',pausedFrom=null,stT=0,t=0;
@@ -592,7 +597,7 @@ function resolve(ok){
     afterDur=MODE().kind==='t'||reduced?1.8:3.0}
   else{streak=0;const picked=Q.ans[z];missed.push({q:Q.img?'This flag':Q.q,img:Q.img,answer:Q.answer,picked});
     lastAns=Object.assign({},missed[missed.length-1],{ok:0,tag:Q.tag||null});
-    bdEls[z].classList.add('wrong');boardTint(z,'wrong');bdEls[Q.correct].classList.add('right');boardTint(Q.correct,'right');
+    bdEls[z].classList.add('wrong');bdEls[z].querySelector('.tick').textContent='✗';boardTint(z,'wrong');bdEls[Q.correct].classList.add('right');boardTint(Q.correct,'right');
     bdEls.forEach((e,i)=>{if(i!==z&&i!==Q.correct)e.classList.add('dimmed')});
     banner('save','Saved!',`Answer: ${Q.answer}`);setTimeout(()=>{if(CAM.mode==='shot')CAM.mode='back'},reduced?0:450);S.ooh();excite=.35;afterDur=2.5}
   flashLed(ok?'goal':'save');JB.msg=ok?'GOAL!':'SAVED';paintJumbo();
@@ -730,7 +735,7 @@ function update(dtR){
     if(!shot.resolved&&!shot.ok&&shot.ft>=shot.T-.004)onBallEvent('save');
     if(!shot.resolved&&shot.ft>shot.T+1.6){shot.resolved=true;resolve(shot.ok)}}
   if(state==='after'){afterT+=dtR;
-    if(shot.ok&&!timed&&!reduced&&CAM.mode!=='net'&&afterT>1.1){cut();netCam();show('boards',false)}
+    if(afterT>.9&&CAM.mode==='shot')CAM.mode='back';
     if(afterT>afterDur)nextShot()}
   stepKeeper(dt);
   if(ledFlash>0){ledFlash-=dtR;if(ledFlash<=0){paintLed();JB.msg='';paintJumbo()}}
