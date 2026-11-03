@@ -35,7 +35,10 @@ const curSubject=()=>{const id=ov?ov.subject:cfg.subject;return SUBJECTS.find(s=
 const curTopic=()=>{const s=curSubject(),id=ov?ov.topic:cfg.topic;return s.topics.find(t=>t.id===id)||s.topics[0]};
 const topicDiff=tp=>cfg.diffs[tp.id]||tp.d;
 const DIFF=()=>ov?(ov.level||curTopic().d):topicDiff(curTopic());
-const MODE=()=>MODES.find(m=>m.id===(ov&&ov.mode?ov.mode:cfg.mode))||MODES[0];
+/* custom run length: 'p<n>' = n shots (3–50), 't<n>' = n seconds (20–600) */
+const parseMode=id=>{const f=MODES.find(m=>m.id===id);if(f)return f;const x=/^([pt])(\d{1,3})$/.exec(String(id||''));if(!x)return null;
+  const kind=x[1],n=kind==='p'?Math.min(50,Math.max(3,+x[2])):Math.min(600,Math.max(20,Math.round(+x[2]/10)*10));return{id:kind+n,name:kind==='p'?`${n} shots`:`${n} sec`,kind,n,custom:true}};
+const MODE=()=>parseMode(ov&&ov.mode?ov.mode:cfg.mode)||MODES[0];
 const curKit=()=>KITS.find(k=>k.id===cfg.kit)||KITS[0];
 const curBall=()=>BALLS.find(b=>b.id===cfg.ball)||BALLS[0];
 const bestKey=(id,d,m)=>`goalfall-best-${id||curTopic().id}-d${d||DIFF()}-${m||MODE().id}`;
@@ -692,7 +695,11 @@ function renderTopics(){const s=curSubject(),tp0=curTopic();cfg.topic=tp0.id;$('
   {const old=document.getElementById('regPick');if(old)old.remove();const pk=EduQ.regionPicker&&EduQ.regionPicker(tp0,{onChange:renderTopics});if(pk){pk.id='regPick';box.after(pk)}}
   $('startBtn').textContent='Kick off';
   const dd=topicDiff(tp0);document.querySelectorAll('#diffSeg button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.d===dd));
-  const ms=$('modeSeg');ms.innerHTML='';MODES.forEach(m=>{const b=el('button',null,m.name);b.type='button';b.setAttribute('aria-pressed',m.id===cfg.mode);b.onclick=()=>{cfg.mode=m.id;saveCfg();renderTopics()};ms.append(b)})}
+  const ms=$('modeSeg');ms.innerHTML='';const isC=!!cfg.mcustom;MODES.forEach(m=>{const b=el('button',null,m.name);b.type='button';b.setAttribute('aria-pressed',!isC&&m.id===cfg.mode);b.onclick=()=>{cfg.mode=m.id;cfg.mcustom=false;saveCfg();renderTopics()};ms.append(b)});
+  {const b=el('button',null,'Custom');b.type='button';b.setAttribute('aria-pressed',isC);b.onclick=()=>{cfg.mcustom=true;cfg.mode=(parseMode(cfg.cmode)||parseMode('p15')).id;saveCfg();renderTopics()};ms.append(b)}
+  {const o=document.getElementById('customMode');if(o)o.remove();if(isC&&EduQ.customRow){const m=MODE();
+    const row=EduQ.customRow([{key:'kind',label:'Play for',options:[['p','Shots'],['t','Seconds']]},m.kind==='p'?{key:'n',label:'Shots',min:3,max:50,step:1}:{key:'n',label:'Time',unit:'s',min:20,max:600,step:10}],{kind:m.kind,n:m.n},
+      v=>{const k=v.kind,n=k!==m.kind?(k==='p'?15:90):v.n;const nm=parseMode(k+n);cfg.mode=cfg.cmode=nm.id;saveCfg();renderTopics()});row.id='customMode';ms.after(row)}}}
 document.querySelectorAll('#diffSeg button').forEach(b=>b.onclick=()=>{cfg.diffs[curTopic().id]=+b.dataset.d;saveCfg();renderTopics()});
 function renderKits(){const box=$('kits');box.innerHTML='';KITS.forEach(k=>{const b=el('button','opt');b.type='button';b.setAttribute('aria-pressed',k.id===cfg.kit);
   b.innerHTML=kitSvg(k);b.append(el('span',null,k.name));b.onclick=()=>{cfg.kit=k.id;saveCfg();applyLooks();renderKits()};box.append(b)})}
@@ -715,7 +722,7 @@ let lastAns=null;/* the last answer rides on the next edu-progress, for the port
 const toParent=m=>{try{if(m&&m.type==='edu-progress'&&lastAns){m.last=lastAns;lastAns=null}if(window.parent!==window)window.parent.postMessage(m,'*')}catch(e){}};
 function applyEmbed(){if(!EMBED)return false;const s=SUBJECTS.find(s=>s.topics.some(t=>t.id===EMBED.topic));if(!s)return false;
   /* kept in `ov`, never saved into the player's own settings */
-  ov={subject:s.id,topic:EMBED.topic,level:[1,2,3].includes(EMBED.level)?EMBED.level:0,mode:MODES.some(m=>m.id===EMBED.mode)?EMBED.mode:'p10'};
+  ov={subject:s.id,topic:EMBED.topic,level:[1,2,3].includes(EMBED.level)?EMBED.level:0,mode:parseMode(EMBED.mode)?parseMode(EMBED.mode).id:'p10'};
   if(EMBED.lock){$('againBtn').hidden=true;$('menuBtn').hidden=true;$('overActions').prepend(el('p','sent','Result sent to your teacher.'))}
   return true}
 

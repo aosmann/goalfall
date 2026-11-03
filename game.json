@@ -9,7 +9,95 @@
   "bank": "EduQ",
   "score": "points",
   "settings": [
-    {"key": "level", "label": "Difficulty", "options": [[1, "Easy"], [2, "Medium"], [3, "Hard"]], "default": "topic"},
-    {"key": "mode", "label": "Run length", "options": [["p10", "10 penalties"], ["p20", "20 penalties"], ["t60", "60 sec"], ["t90", "90 sec"]], "default": "p10"}
+    {
+      "key": "level",
+      "label": "Difficulty",
+      "options": [
+        [
+          1,
+          "Easy"
+        ],
+        [
+          2,
+          "Medium"
+        ],
+        [
+          3,
+          "Hard"
+        ]
+      ],
+      "default": "topic"
+    },
+    {
+      "key": "mode",
+      "label": "Run length",
+      "options": [
+        [
+          "p10",
+          "10 penalties"
+        ],
+        [
+          "p20",
+          "20 penalties"
+        ],
+        [
+          "t60",
+          "60 sec"
+        ],
+        [
+          "t90",
+          "90 sec"
+        ]
+      ],
+      "default": "p10",
+      "custom": {
+        "label": "Custom",
+        "by": "kind",
+        "formats": {
+          "p": "p{np}",
+          "t": "t{nt}"
+        },
+        "fields": [
+          {
+            "key": "kind",
+            "label": "Play for",
+            "options": [
+              [
+                "p",
+                "Shots"
+              ],
+              [
+                "t",
+                "Seconds"
+              ]
+            ],
+            "default": "p"
+          },
+          {
+            "key": "np",
+            "label": "Shots",
+            "min": 3,
+            "max": 50,
+            "step": 1,
+            "default": 15,
+            "if": {
+              "kind": "p"
+            }
+          },
+          {
+            "key": "nt",
+            "label": "Time",
+            "unit": "s",
+            "min": 20,
+            "max": 600,
+            "step": 10,
+            "default": 90,
+            "if": {
+              "kind": "t"
+            }
+          }
+        ]
+      }
+    }
   ]
 }
